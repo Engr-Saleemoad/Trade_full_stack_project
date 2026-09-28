@@ -132,6 +132,11 @@ const PORT = process.env.PORT || 5000;
 const server = http.createServer(app);
 initSocket(server);
 
-server.listen(PORT, () => {
-  console.log(`🚀 Global Profit Hub Live Server running on port ${PORT}`);
-});
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  server.listen(PORT, () => {
+    console.log(`🚀 Global Profit Hub Live Server running on port ${PORT}`);
+  });
+}
+
+export { app, server };
+export default app;
