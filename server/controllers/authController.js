@@ -3,6 +3,7 @@ import LoginLog from '../models/LoginLog.js';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { connectDB } from '../config/db.js';
 
 // Seed default test user into MongoDB if not existing
 export const seedDefaultTestUser = async () => {
@@ -50,6 +51,15 @@ const generateToken = (id) => {
  */
 export const registerUser = async (req, res, next) => {
   try {
+    if (mongoose.connection.readyState !== 1) {
+      await connectDB();
+    }
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        error: 'Database connection failed. Please whitelist your current IP address (0.0.0.0/0) in MongoDB Atlas (Network Access) or start local MongoDB.'
+      });
+    }
+
     const { firstName, lastName, username, email, country, phone, password, referralCode, referrerUsername, referredBy } = req.body;
 
     if (!firstName || !lastName || !username || !email || !phone || !password) {
@@ -150,6 +160,15 @@ export const registerUser = async (req, res, next) => {
  */
 export const loginUser = async (req, res, next) => {
   try {
+    if (mongoose.connection.readyState !== 1) {
+      await connectDB();
+    }
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        error: 'Database connection failed. Please whitelist your current IP address (0.0.0.0/0) in MongoDB Atlas (Network Access) or start local MongoDB.'
+      });
+    }
+
     const { email, password, username } = req.body;
 
     const identifier = (email || username || '').trim().toLowerCase();

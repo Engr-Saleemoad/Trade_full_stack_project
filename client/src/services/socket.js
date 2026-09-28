@@ -1,11 +1,24 @@
 import { io } from 'socket.io-client';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const getBaseApiUrl = () => {
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '');
+  }
+  if (typeof window !== 'undefined') {
+    const { protocol, hostname, port } = window.location;
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return `${protocol}//${hostname}:5000`;
+    }
+    return `${protocol}//${hostname}${port && port !== '80' && port !== '443' && port !== '5173' ? ':' + port : ''}`;
+  }
+  return 'http://localhost:5000';
+};
+
 let socket = null;
 
 export const getSocket = () => {
   if (!socket) {
-    socket = io(API_URL, {
+    socket = io(getBaseApiUrl(), {
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionAttempts: 10,

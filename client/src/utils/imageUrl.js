@@ -8,8 +8,17 @@ export const getImageUrl = (url) => {
     return url;
   }
   
-  const baseUrl = import.meta.env.VITE_API_URL || 
-    (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:5000` : 'http://localhost:5000');
+  let baseUrl = 'http://localhost:5000';
+  if (import.meta.env.VITE_API_URL) {
+    baseUrl = import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '');
+  } else if (typeof window !== 'undefined') {
+    const { protocol, hostname, port } = window.location;
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      baseUrl = `${protocol}//${hostname}:5000`;
+    } else {
+      baseUrl = `${protocol}//${hostname}${port && port !== '80' && port !== '443' && port !== '5173' ? ':' + port : ''}`;
+    }
+  }
   
   const cleanPath = url.startsWith('/') ? url : `/${url}`;
   return `${baseUrl}${cleanPath}`;

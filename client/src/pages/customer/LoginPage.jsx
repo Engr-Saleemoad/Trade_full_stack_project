@@ -43,15 +43,14 @@ export const LoginPage = () => {
         navigate('/dashboard');
       }, 1000);
     } catch (err) {
-      if (!err.response) {
-        setErrorMsg("Cannot connect to server. Check if backend is running on port 5000.");
-      } else {
-        const backendError =
-          err.response?.data?.error ||
-          err.response?.data?.message ||
-          'Authentication failed. Invalid credentials.';
-        setErrorMsg(backendError);
-      }
+      console.error('[Customer Login Error]:', err);
+      const backendError =
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        (err.message === 'Network Error'
+          ? 'Network Error: Cannot connect to API server. Ensure backend server is running.'
+          : err.message || 'Authentication failed. Invalid credentials.');
+      setErrorMsg(backendError);
     } finally {
       setLoading(false);
     }

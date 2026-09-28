@@ -113,18 +113,11 @@ export const getAdminUsers = async (req, res, next) => {
         .sort({ createdAt: -1 })
         .lean();
 
-      if (!users || users.length === 0) {
-        return res.status(200).json({
-          success: true,
-          count: devUsersState.length,
-          data: devUsersState,
-        });
-      }
-
+      const userList = users || [];
       return res.status(200).json({
         success: true,
-        count: users.length,
-        data: users.map((u) => ({
+        count: userList.length,
+        data: userList.map((u) => ({
           ...u,
           _id: u._id.toString(),
           status: u.isSuspended ? 'Suspended' : u.status || 'Active',

@@ -113,14 +113,6 @@ export const getAdminDeposits = async (req, res, next) => {
         })
       );
 
-      if (populatedDeposits.length === 0) {
-        return res.status(200).json({
-          success: true,
-          count: devDepositsState.length,
-          data: devDepositsState,
-        });
-      }
-
       return res.status(200).json({
         success: true,
         count: populatedDeposits.length,

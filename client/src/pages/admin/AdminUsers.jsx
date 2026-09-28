@@ -80,66 +80,7 @@ export const AdminUsers = () => {
       }
     } catch (error) {
       console.error('[Admin Users View] Error fetching users:', error);
-      // Fallback dev data if API fails
-      setUsers([
-        {
-          _id: 'default_test_john_123',
-          firstName: 'John',
-          lastName: 'Doe',
-          username: 'john',
-          email: 'john@example.com',
-          phone: '1234567890',
-          country: 'Afghanistan (+93)',
-          mainBalance: 1250.0,
-          interestBalance: 320.0,
-          totalDeposit: 1000.0,
-          totalEarn: 450.0,
-          totalInvest: 800.0,
-          totalPayout: 200.0,
-          totalReferralBonus: 50.0,
-          isSuspended: false,
-          status: 'Active',
-          createdAt: new Date('2026-07-20T10:00:00Z').toISOString(),
-        },
-        {
-          _id: 'user_luca_99',
-          firstName: 'Luca',
-          lastName: 'Graci',
-          username: 'lucagracia',
-          email: 'luca@gmail.com',
-          phone: '9876543210',
-          country: 'Italy (+39)',
-          mainBalance: 4500.0,
-          interestBalance: 890.0,
-          totalDeposit: 5000.0,
-          totalEarn: 1200.0,
-          totalInvest: 3500.0,
-          totalPayout: 500.0,
-          totalReferralBonus: 120.0,
-          isSuspended: false,
-          status: 'Active',
-          createdAt: new Date('2026-07-18T14:20:00Z').toISOString(),
-        },
-        {
-          _id: 'user_sarah_88',
-          firstName: 'Sarah',
-          lastName: 'Connor',
-          username: 'sarah_c',
-          email: 'sarah@skynet.org',
-          phone: '5551234567',
-          country: 'United States (+1)',
-          mainBalance: 0.0,
-          interestBalance: 0.0,
-          totalDeposit: 100.0,
-          totalEarn: 10.0,
-          totalInvest: 100.0,
-          totalPayout: 0.0,
-          totalReferralBonus: 0.0,
-          isSuspended: true,
-          status: 'Suspended',
-          createdAt: new Date('2026-07-15T09:10:00Z').toISOString(),
-        },
-      ]);
+      setUsers([]);
     } finally {
       setLoading(false);
     }
