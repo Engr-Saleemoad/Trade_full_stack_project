@@ -1,0 +1,12 @@
+{
+  "name": "trade-project-monorepo",
+  "version": "1.0.0",
+  "description": "Full-stack project monorepo with Node/Express backend and React/Vite frontend",
+  "private": true,
+  "scripts": {
+    "dev:server": "npm run dev --prefix server",
+    "dev:client": "npm run dev --prefix client",
+    "start:server": "npm start --prefix server",
+    "build:client": "npm run build --prefix client"
+  }
+}
