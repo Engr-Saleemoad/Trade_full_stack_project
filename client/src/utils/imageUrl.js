@@ -8,15 +8,16 @@ export const getImageUrl = (url) => {
     return url;
   }
   
-  let baseUrl = 'http://localhost:5000';
-  if (import.meta.env.VITE_API_URL) {
-    baseUrl = import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '');
-  } else if (typeof window !== 'undefined') {
+  let baseUrl = 'https://globalprofithub-api.onrender.com';
+  if (typeof window !== 'undefined') {
     const { protocol, hostname, port } = window.location;
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || port === '5173' || port === '3000') {
       baseUrl = `${protocol}//${hostname}:5000`;
     } else {
-      baseUrl = `${protocol}//${hostname}${port && port !== '80' && port !== '443' && port !== '5173' ? ':' + port : ''}`;
+      const envUrl = import.meta.env.VITE_API_URL;
+      if (envUrl && envUrl.startsWith('http') && !envUrl.includes('localhost') && !envUrl.includes('127.0.0.1')) {
+        baseUrl = envUrl.replace(/\/api\/?$/, '');
+      }
     }
   }
   

@@ -1,17 +1,19 @@
 import { io } from 'socket.io-client';
 
 const getBaseApiUrl = () => {
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '');
-  }
   if (typeof window !== 'undefined') {
     const { protocol, hostname, port } = window.location;
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || port === '5173' || port === '3000') {
       return `${protocol}//${hostname}:5000`;
     }
-    return `${protocol}//${hostname}${port && port !== '80' && port !== '443' && port !== '5173' ? ':' + port : ''}`;
   }
-  return 'http://localhost:5000';
+
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (envUrl && envUrl.startsWith('http') && !envUrl.includes('localhost') && !envUrl.includes('127.0.0.1')) {
+    return envUrl.replace(/\/api\/?$/, '');
+  }
+
+  return 'https://globalprofithub-api.onrender.com';
 };
 
 let socket = null;
