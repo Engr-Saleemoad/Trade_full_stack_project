@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   Globe,
@@ -12,10 +12,17 @@ import {
   Receipt,
   ArrowUpRight,
   Clock,
+  LogOut,
 } from 'lucide-react';
 
 export const Sidebar = ({ activeTab, handleTabChange }) => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   const mainBalanceFormatted = user?.mainBalance !== undefined && user?.mainBalance !== null
     ? `$${Number(user.mainBalance).toFixed(2)}`
@@ -40,16 +47,6 @@ export const Sidebar = ({ activeTab, handleTabChange }) => {
   return (
     <aside className="w-64 bg-[#0B0326] border-r border-purple-900/30 flex-col justify-between shrink-0 hidden lg:flex">
       <div>
-        {/* Top Sidebar Header Logo */}
-        <div className="h-20 flex items-center px-6 border-b border-purple-900/30 space-x-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#FF5A1F] to-amber-600 flex items-center justify-center text-white shadow-md shadow-[#FF5A1F]/30">
-            <Globe className="w-5 h-5" />
-          </div>
-          <span className="text-base font-black tracking-tight text-white leading-none">
-            GLOBAL <span className="text-[#FF5A1F]">PROFIT</span> HUB
-          </span>
-        </div>
-
         {/* Dynamic Account Balance Widget */}
         <div className="p-4 mx-4 my-4 rounded-2xl bg-[#140838] border border-purple-900/40 space-y-2">
           <span className="text-[10px] uppercase font-bold text-[#A397C7] tracking-wider block">
@@ -110,9 +107,9 @@ export const Sidebar = ({ activeTab, handleTabChange }) => {
       <div className="p-4 border-t border-purple-900/30">
         <Link
           to="/"
-          className="flex items-center justify-center space-x-2 w-full py-2 px-3 rounded-xl bg-purple-950/50 hover:bg-purple-900/60 text-xs font-semibold text-slate-300 border border-purple-800/40 transition-all"
+          className="flex items-center justify-center space-x-2 w-full py-2 px-3 rounded-xl bg-purple-950/50 hover:bg-purple-900/60 text-[11px] font-semibold text-slate-300 border border-purple-800/40 transition-all text-center block"
         >
-          <span>Return to Main Website</span>
+          <span>Return to Website</span>
         </Link>
       </div>
     </aside>

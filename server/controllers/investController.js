@@ -5,7 +5,7 @@ import Setting from '../models/Setting.js';
 import Transaction from '../models/Transaction.js';
 import mongoose from 'mongoose';
 import { emitRealtimeEvent } from '../socket.js';
-import { distributeReferralCommission } from '../routes/adminReferrals.js';
+import { distributeReferralCommissions } from '../utils/referralBonus.js';
 
 // In-memory dev storage when MongoDB is offline
 export const inMemoryDevInvestments = [];
@@ -112,7 +112,7 @@ export const purchasePlan = async (req, res, next) => {
 
       // Trigger multi-level referral commission distribution
       try {
-        await distributeReferralCommission(user._id, planPrice, `Plan Purchase (${name})`);
+        await distributeReferralCommissions(user._id, planPrice, `Plan Purchase (${name})`);
       } catch (refErr) {
         console.warn('[Referral Hook Notice]:', refErr.message);
       }
@@ -343,5 +343,49 @@ export const claimReward = async (req, res, next) => {
     }
   } catch (error) {
     next(error);
+  }
+};
+
+/**
+ * @desc    Get all customer investments for Admin Management View
+ * @route   GET /api/admin/investments
+ * @access  Private (Admin Protected)
+ */
+export const getAllInvestmentsAdmin = async (req, res, next) => {
+  try {
+    const isMongoConnected = mongoose.connection.readyState === 1;
+
+    if (isMongoConnected) {
+      const investments = await Investment.find().sort({ createdAt: -1 });
+
+      const populated = await Promise.all(
+        investments.map(async (inv) => {
+          let userObj = null;
+          if (inv.userId && mongoose.Types.ObjectId.isValid(inv.userId)) {
+            userObj = await User.findById(inv.userId).select('username email fullName');
+          }
+          const item = inv.toObject();
+          item.username = userObj ? userObj.username : (inv.username || 'Customer');
+          item.email = userObj ? userObj.email : 'N/A';
+          item.returnAmount = item.dailyReturnAmount || ((item.price * (item.dailyReturnPercentage || 5)) / 100);
+          return item;
+        })
+      );
+
+      return res.status(200).json({
+        success: true,
+        count: populated.length,
+        data: populated,
+      });
+    } else {
+      return res.status(200).json({
+        success: true,
+        count: inMemoryDevInvestments.length,
+        data: inMemoryDevInvestments,
+      });
+    }
+  } catch (error) {
+    console.error('[Admin Investments Fetch Error]:', error);
+    res.status(500).json({ success: false, error: error.message });
   }
 };

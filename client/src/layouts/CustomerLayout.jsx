@@ -1,28 +1,34 @@
 import React from 'react';
-import { Link, NavLink, Outlet } from 'react-router-dom';
-import { Shield, Home, LayoutDashboard, Globe, ExternalLink } from 'lucide-react';
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { Shield, Home, LayoutDashboard, Globe, ExternalLink, LogOut } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 export const CustomerLayout = () => {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
   return (
-    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100">
+    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 font-sans">
       {/* Customer Header / Navbar */}
       <header className="sticky top-0 z-40 backdrop-blur-md bg-slate-900/80 border-b border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#FF5A1F] to-amber-600 flex items-center justify-center shadow-lg shadow-[#FF5A1F]/30 border border-[#FF5A1F]/40">
               <Globe className="w-5 h-5 text-white" />
             </div>
             <div>
-              <span className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-indigo-300">
-                Customer Web App
-              </span>
-              <span className="hidden sm:inline-block ml-2 text-xs font-medium px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                Public Portal
+              <span className="text-lg font-black tracking-tight text-white leading-none">
+                GLOBAL <span className="text-[#FF5A1F]">PROFIT</span> HUB
               </span>
             </div>
           </div>
 
-          <nav className="flex items-center space-x-1 sm:space-x-4">
+          <nav className="flex items-center space-x-2 sm:space-x-4">
             <NavLink
               to="/"
               end
@@ -49,19 +55,25 @@ export const CustomerLayout = () => {
               }
             >
               <LayoutDashboard className="w-4 h-4" />
-              <span>User Dashboard</span>
+              <span>Dashboard</span>
             </NavLink>
 
-            <div className="h-4 w-px bg-slate-800 mx-2" />
-
-            <Link
-              to="/admin"
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-violet-600/20 text-violet-300 border border-violet-500/30 hover:bg-violet-600/30 transition-all"
-            >
-              <Shield className="w-3.5 h-3.5" />
-              <span>Admin Portal</span>
-              <ExternalLink className="w-3 h-3 opacity-60" />
-            </Link>
+            {user ? (
+              <button
+                onClick={handleLogout}
+                className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/30 text-xs font-bold transition-all cursor-pointer shadow-md"
+              >
+                <LogOut className="w-4 h-4 text-rose-400" />
+                <span>Sign Out</span>
+              </button>
+            ) : (
+              <Link
+                to="/login"
+                className="px-3.5 py-2 rounded-xl bg-[#FF5A1F] hover:bg-[#e04c15] text-white text-xs font-bold transition-all shadow-md"
+              >
+                Login
+              </Link>
+            )}
           </nav>
         </div>
       </header>

@@ -2,23 +2,18 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { loginUserApi } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-import { ArrowLeft, Lock, Mail, Shield, AlertCircle, CheckCircle2, Zap } from 'lucide-react';
+import { ArrowLeft, Lock, Mail, Shield, AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 
 export const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const navigate = useNavigate();
   const { login } = useAuth();
-
-  const handleQuickFill = () => {
-    setEmail('john');
-    setPassword('ABCabc@123');
-    setErrorMsg('');
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -91,25 +86,6 @@ export const LoginPage = () => {
           <p className="text-xs text-[#A397C7]">Access your Global Profit Hub investment portfolio</p>
         </div>
 
-        {/* Quick Test Credentials Helper Banner */}
-        <div className="mb-6 p-3 rounded-xl bg-purple-950/60 border border-purple-800/40 text-xs flex items-center justify-between">
-          <div>
-            <p className="font-semibold text-white flex items-center gap-1">
-              <Zap className="w-3.5 h-3.5 text-[#FF5A1F]" /> Test Account Pre-Saved:
-            </p>
-            <p className="text-[11px] text-purple-300 font-mono mt-0.5">
-              User: <strong className="text-white">john</strong> | Pass: <strong className="text-white">ABCabc@123</strong>
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={handleQuickFill}
-            className="px-3 py-1.5 rounded-lg bg-[#FF5A1F] hover:bg-[#e04c15] text-white text-[11px] font-bold transition-all shadow-md cursor-pointer shrink-0"
-          >
-            Auto Fill
-          </button>
-        </div>
-
         {/* Dynamic Error Message Block Container */}
         {errorMsg && (
           <div className="mb-6 p-4 rounded-2xl bg-rose-950/80 border border-rose-500/50 text-rose-200 flex items-start space-x-3 text-xs font-medium shadow-lg shadow-rose-950/40 animate-fadeIn">
@@ -153,13 +129,20 @@ export const LoginPage = () => {
             <div className="relative">
               <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-purple-400" />
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••••••"
-                className="w-full pl-10 pr-4 py-3 bg-[#0B0326]/80 border border-purple-800/40 rounded-xl text-sm text-white placeholder:text-purple-300/30 focus:outline-none focus:border-[#FF5A1F] transition-colors"
+                className="w-full pl-10 pr-10 py-3 bg-[#0B0326]/80 border border-purple-800/40 rounded-xl text-sm text-white placeholder:text-purple-300/30 focus:outline-none focus:border-[#FF5A1F] transition-colors"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-purple-400 hover:text-white transition-colors cursor-pointer"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
           </div>
 

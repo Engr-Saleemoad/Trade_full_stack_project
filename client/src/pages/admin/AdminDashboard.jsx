@@ -31,82 +31,28 @@ import {
   AlertCircle,
 } from 'lucide-react';
 
+import adminAPI from '../../api/adminAxios';
+
 export const AdminDashboard = () => {
   const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState('');
 
   const loadMetrics = async () => {
     setLoading(true);
+    setErrorMsg('');
     try {
-      const res = await fetchAdminDashboardMetricsApi();
-      if (res.data) {
-        setMetrics(res.data);
+      const res = await adminAPI.get('/api/admin/dashboard-metrics');
+      const data = res.data?.data || res.data?.metrics || res.data;
+      if (data) {
+        setMetrics(data);
+      } else {
+        setErrorMsg('No metrics data returned from server.');
       }
     } catch (err) {
-      console.warn('[Admin Dashboard] Using default fallback metrics payload:', err.message);
-      // Fallback matching image_3e573a.jpg
-      setMetrics({
-        totalUsers: 41,
-        totalActiveUsers: 41,
-        todayJoinUser: 2,
-        totalUserFund: 13141,
-        totalInterestFund: 19447.8,
-        totalPlans: 10,
-        totalInvestment: 17,
-        runningInvestment: 17,
-        completeInvestment: 0,
-        todayInvestCount: 1,
-        todayInvestAmount: 20,
-        thisMonthInvestAmount: 1200,
-        totalInvestAmount: 23440,
-        todayDepositAmount: 100,
-        totalDepositAmount: 3780,
-        depositedCharge: 0,
-        pendingPayoutRequest: 3,
-        todayPayoutAmount: 0,
-        thisMonthPayoutAmount: 500,
-        thisMonthPayoutCharge: 50,
-        closedTickets: 0,
-        repliedTickets: 0,
-        answeredTickets: 0,
-        pendingTickets: 0,
-        monthSummaryChart: [
-          { day: '01 Jul', investments: 200, deposits: 300, returnProfit: 50, payout: 0 },
-          { day: '05 Jul', investments: 450, deposits: 800, returnProfit: 120, payout: 100 },
-          { day: '10 Jul', investments: 800, deposits: 1200, returnProfit: 250, payout: 200 },
-          { day: '15 Jul', investments: 1100, deposits: 2400, returnProfit: 410, payout: 350 },
-          { day: '20 Jul', investments: 1200, deposits: 3780, returnProfit: 600, payout: 500 },
-        ],
-        planSalePieChart: [
-          { name: 'Shiba Inu (SHIB)', value: 35, color: '#FF5A1F' },
-          { name: 'Cardano (ADA)', value: 25, color: '#3B82F6' },
-          { name: 'Polygon (MATIC)', value: 20, color: '#8B5CF6' },
-          { name: 'Avalanche (AVAX)', value: 12, color: '#EF4444' },
-          { name: 'Dogecoin (DOGE)', value: 8, color: '#F59E0B' },
-        ],
-        latestUsers: [
-          {
-            id: '1',
-            name: 'luca graci',
-            username: 'lucagracia',
-            email: 'luca@gmail.com',
-            balance: 1.0,
-            interestBalance: 0.0,
-            status: 'Active',
-            createdAt: new Date('2026-07-20T12:00:00Z').toISOString(),
-          },
-          {
-            id: '2',
-            name: 'John Doe',
-            username: 'john',
-            email: 'john@example.com',
-            balance: 1250.0,
-            interestBalance: 320.0,
-            status: 'Active',
-            createdAt: new Date('2026-07-20T10:00:00Z').toISOString(),
-          },
-        ],
-      });
+      console.error('[Admin Dashboard Error]:', err);
+      const msg = err.response?.data?.error || err.message || 'Failed to connect to database server.';
+      setErrorMsg(msg);
     } finally {
       setLoading(false);
     }
@@ -127,52 +73,81 @@ export const AdminDashboard = () => {
     );
   }
 
-  // Row 1 - Row 4 Cards Mapping (16 Metrics Cards from image_3e573a.jpg)
+  // Helper numerical formatters for safety
+  const safeNum = (val) => (typeof val === 'number' && !isNaN(val) ? val : Number(val) || 0);
+  const formatUSD = (val) => `$${safeNum(val).toLocaleString()}`;
+
+  // Safe metrics extraction
+  const totalUsers = safeNum(metrics?.totalUsers);
+  const totalActiveUsers = safeNum(metrics?.totalActiveUsers);
+  const todayJoinUser = safeNum(metrics?.todayJoinUser);
+  const totalUserFund = formatUSD(metrics?.totalUserFund);
+
+  const totalInterestFund = formatUSD(metrics?.totalInterestFund);
+  const totalPlans = safeNum(metrics?.totalPlans);
+  const totalInvestment = safeNum(metrics?.totalInvestment);
+  const runningInvestment = safeNum(metrics?.runningInvestment);
+
+  const completeInvestment = safeNum(metrics?.completeInvestment);
+  const todayInvestCount = safeNum(metrics?.todayInvestCount);
+  const todayInvestAmount = `$${safeNum(metrics?.todayInvestAmount)}`;
+  const thisMonthInvestAmount = formatUSD(metrics?.thisMonthInvestAmount);
+
+  const totalInvestAmount = formatUSD(metrics?.totalInvestAmount);
+  const todayDepositAmount = `$${safeNum(metrics?.todayDepositAmount)}`;
+  const totalDepositAmount = formatUSD(metrics?.totalDepositAmount);
+  const depositedCharge = `$${safeNum(metrics?.depositedCharge)}`;
+
+  const monthSummaryChart = metrics?.monthSummaryChart || [];
+  const planSalePieChart = metrics?.planSalePieChart || [];
+  const latestUsers = metrics?.latestUsers || [];
+
+  // Row 1 - Row 4 Cards Mapping
   const statGridRows = [
     // Row 1
     [
-      { label: 'Total Users', value: metrics.totalUsers, icon: Users },
-      { label: 'Total Active Users', value: metrics.totalActiveUsers, icon: UserCheck },
-      { label: 'Today Join User', value: metrics.todayJoinUser, icon: UserPlus },
-      { label: 'Total User Fund', value: `$${metrics.totalUserFund.toLocaleString()}`, icon: Wallet },
+      { label: 'Total Users', value: totalUsers, icon: Users },
+      { label: 'Total Active Users', value: totalActiveUsers, icon: UserCheck },
+      { label: 'Today Join User', value: todayJoinUser, icon: UserPlus },
+      { label: 'Total User Fund', value: totalUserFund, icon: Wallet },
     ],
     // Row 2
     [
-      { label: 'Total Interest Fund', value: `$${metrics.totalInterestFund.toLocaleString()}`, icon: DollarSign },
-      { label: 'Total Plans', value: metrics.totalPlans, icon: Award },
-      { label: 'Total Investment', value: metrics.totalInvestment, icon: TrendingUp },
-      { label: 'Running Investment', value: metrics.runningInvestment, icon: RefreshCw },
+      { label: 'Total Interest Fund', value: totalInterestFund, icon: DollarSign },
+      { label: 'Total Plans', value: totalPlans, icon: Award },
+      { label: 'Total Investment', value: totalInvestment, icon: TrendingUp },
+      { label: 'Running Investment', value: runningInvestment, icon: RefreshCw },
     ],
     // Row 3
     [
-      { label: 'Complete Investment', value: metrics.completeInvestment, icon: CheckCircle },
-      { label: 'Today Invest', value: metrics.todayInvestCount, icon: Calendar },
-      { label: "Today's Invest", value: `$${metrics.todayInvestAmount}`, icon: DollarSign },
-      { label: 'This Month Invest', value: `$${metrics.thisMonthInvestAmount.toLocaleString()}`, icon: TrendingUp },
+      { label: 'Complete Investment', value: completeInvestment, icon: CheckCircle },
+      { label: 'Today Invest', value: todayInvestCount, icon: Calendar },
+      { label: "Today's Invest", value: todayInvestAmount, icon: DollarSign },
+      { label: 'This Month Invest', value: thisMonthInvestAmount, icon: TrendingUp },
     ],
     // Row 4
     [
-      { label: 'Total Invest', value: `$${metrics.totalInvestAmount.toLocaleString()}`, icon: Award },
-      { label: "Today's Deposit", value: `$${metrics.todayDepositAmount}`, icon: CreditCard },
-      { label: 'Total Deposit', value: `$${metrics.totalDepositAmount.toLocaleString()}`, icon: Inbox },
-      { label: 'Deposited Charge', value: `$${metrics.depositedCharge}`, icon: DollarSign },
+      { label: 'Total Invest', value: totalInvestAmount, icon: Award },
+      { label: "Today's Deposit", value: todayDepositAmount, icon: CreditCard },
+      { label: 'Total Deposit', value: totalDepositAmount, icon: Inbox },
+      { label: 'Deposited Charge', value: depositedCharge, icon: DollarSign },
     ],
   ];
 
   // Payout Sub-Cards
   const payoutCards = [
-    { label: 'Pending Request', value: metrics.pendingPayoutRequest, icon: Inbox },
-    { label: "Today's Payout", value: `$${metrics.todayPayoutAmount}`, icon: Clock },
-    { label: 'This Month Payout', value: `$${metrics.thisMonthPayoutAmount}`, icon: CreditCard },
-    { label: 'This Month Charge', value: `$${metrics.thisMonthPayoutCharge}`, icon: DollarSign },
+    { label: 'Pending Request', value: safeNum(metrics?.pendingPayoutRequest), icon: Inbox },
+    { label: "Today's Payout", value: `$${safeNum(metrics?.todayPayoutAmount)}`, icon: Clock },
+    { label: 'This Month Payout', value: `$${safeNum(metrics?.thisMonthPayoutAmount)}`, icon: CreditCard },
+    { label: 'This Month Charge', value: `$${safeNum(metrics?.thisMonthPayoutCharge)}`, icon: DollarSign },
   ];
 
   // Tickets Sub-Cards
   const ticketsCards = [
-    { label: 'Closed Ticket', value: metrics.closedTickets, icon: Ticket },
-    { label: 'Replied Ticket', value: metrics.repliedTickets, icon: Ticket },
-    { label: 'Answered Ticket', value: metrics.answeredTickets, icon: Ticket },
-    { label: 'Pending Ticket', value: metrics.pendingTickets, icon: Ticket },
+    { label: 'Closed Ticket', value: safeNum(metrics?.closedTickets), icon: Ticket },
+    { label: 'Replied Ticket', value: safeNum(metrics?.repliedTickets), icon: Ticket },
+    { label: 'Answered Ticket', value: safeNum(metrics?.answeredTickets), icon: Ticket },
+    { label: 'Pending Ticket', value: safeNum(metrics?.pendingTickets), icon: Ticket },
   ];
 
   return (
@@ -232,7 +207,7 @@ export const AdminDashboard = () => {
 
           <div className="h-72 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={metrics.monthSummaryChart}>
+              <LineChart data={monthSummaryChart}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#261254" />
                 <XAxis dataKey="day" stroke="#A397C7" fontSize={11} />
                 <YAxis stroke="#A397C7" fontSize={11} />
@@ -278,7 +253,7 @@ export const AdminDashboard = () => {
             <ResponsiveContainer width="100%" height="100%">
               <RePieChart>
                 <Pie
-                  data={metrics.planSalePieChart}
+                  data={planSalePieChart}
                   cx="50%"
                   cy="50%"
                   innerRadius={50}
@@ -286,8 +261,8 @@ export const AdminDashboard = () => {
                   paddingAngle={4}
                   dataKey="value"
                 >
-                  {metrics.planSalePieChart.map((entry, idx) => (
-                    <Cell key={`cell-${idx}`} fill={entry.color} />
+                  {planSalePieChart.map((entry, idx) => (
+                    <Cell key={`cell-${idx}`} fill={entry.color || '#FF5A1F'} />
                   ))}
                 </Pie>
                 <Tooltip
@@ -299,10 +274,10 @@ export const AdminDashboard = () => {
           </div>
 
           <div className="space-y-1.5 text-xs">
-            {metrics.planSalePieChart.map((item, idx) => (
+            {planSalePieChart.map((item, idx) => (
               <div key={idx} className="flex items-center justify-between text-[#A397C7]">
                 <span className="flex items-center space-x-2">
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color || '#FF5A1F' }} />
                   <span className="text-white font-medium">{item.name}</span>
                 </span>
                 <span className="font-bold text-white font-mono">{item.value}%</span>
@@ -376,14 +351,15 @@ export const AdminDashboard = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-purple-900/30 bg-[#130833]">
-              {metrics.latestUsers.map((user) => (
-                <tr key={user.id} className="hover:bg-purple-950/40 transition-colors">
+              {latestUsers.map((user) => (
+                <tr key={user.id || user._id} className="hover:bg-purple-950/40 transition-colors">
                   <td className="px-6 py-4 font-bold text-white">
-                    {user.name} <span className="text-[#A397C7] font-normal text-[11px]">(@{user.username})</span>
+                    {user.name || user.firstName || 'User'}{' '}
+                    <span className="text-[#A397C7] font-normal text-[11px]">(@{user.username || 'unknown'})</span>
                   </td>
-                  <td className="px-6 py-4 text-slate-300 font-mono">{user.email}</td>
-                  <td className="px-6 py-4 font-extrabold text-emerald-400">${user.balance}</td>
-                  <td className="px-6 py-4 font-extrabold text-indigo-300">${user.interestBalance}</td>
+                  <td className="px-6 py-4 text-slate-300 font-mono">{user.email || 'N/A'}</td>
+                  <td className="px-6 py-4 font-extrabold text-emerald-400">${safeNum(user.balance ?? user.mainBalance).toFixed(2)}</td>
+                  <td className="px-6 py-4 font-extrabold text-indigo-300">${safeNum(user.interestBalance).toFixed(2)}</td>
                   <td className="px-6 py-4">
                     <span className="px-3 py-1 rounded-full text-[10px] font-extrabold uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                       {user.status || 'Active'}
@@ -403,3 +379,4 @@ export const AdminDashboard = () => {
     </div>
   );
 };
+

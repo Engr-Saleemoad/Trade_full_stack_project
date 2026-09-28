@@ -1,4 +1,5 @@
 import User from '../models/User.js';
+import LoginLog from '../models/LoginLog.js';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -49,7 +50,7 @@ const generateToken = (id) => {
  */
 export const registerUser = async (req, res, next) => {
   try {
-    const { firstName, lastName, username, email, country, phone, password } = req.body;
+    const { firstName, lastName, username, email, country, phone, password, referralCode, referrerUsername, referredBy } = req.body;
 
     if (!firstName || !lastName || !username || !email || !phone || !password) {
       return res.status(400).json({ error: 'Please fill in all required fields.' });
@@ -57,18 +58,38 @@ export const registerUser = async (req, res, next) => {
 
     const emailLower = email.toLowerCase();
     const usernameLower = username.toLowerCase();
+    const phoneClean = (phone || '').trim();
 
-    const userExists = await User.findOne({
-      $or: [{ email: emailLower }, { username: usernameLower }],
-    });
+    // Independent Duplicate Validation
+    const existingUser = await User.findOne({ username: usernameLower });
+    if (existingUser) {
+      return res.status(400).json({ error: 'Username already exists' });
+    }
 
-    if (userExists) {
-      if (userExists.email.toLowerCase() === emailLower) {
-        return res.status(400).json({ error: 'An account with this email address already exists.' });
+    const existingEmail = await User.findOne({ email: emailLower });
+    if (existingEmail) {
+      return res.status(400).json({ error: 'Email already exists' });
+    }
+
+    if (phoneClean) {
+      const existingPhone = await User.findOne({ phone: phoneClean });
+      if (existingPhone) {
+        return res.status(400).json({ error: 'Phone number already exists' });
       }
-      if (userExists.username.toLowerCase() === usernameLower) {
-        return res.status(400).json({ error: 'This username is already taken.' });
+    }
+
+    // Lookup referrer if referralCode or referrerUsername or query param is provided
+    let referrerUser = null;
+    const refInput = (referralCode || referrerUsername || referredBy || req.query?.ref || '').toString().trim();
+
+    if (refInput) {
+      const queryConditions = [
+        { username: refInput.toLowerCase() }
+      ];
+      if (mongoose.Types.ObjectId.isValid(refInput)) {
+        queryConditions.push({ _id: refInput });
       }
+      referrerUser = await User.findOne({ $or: queryConditions });
     }
 
     const user = await User.create({
@@ -79,6 +100,9 @@ export const registerUser = async (req, res, next) => {
       country: country || 'Afghanistan (+93)',
       phone,
       password,
+      referredBy: referrerUser ? referrerUser._id : null,
+      referrerId: referrerUser ? referrerUser._id : null,
+      referralLevel: referrerUser ? (referrerUser.referralLevel || 0) + 1 : 0,
       mainBalance: 0.00,
       interestBalance: 0.00,
       totalDeposit: 0.00,
@@ -154,6 +178,40 @@ export const loginUser = async (req, res, next) => {
     }
     if (accountStatus === 'Blocked') {
       return res.status(403).json({ error: 'Your account has been permanently blocked. Access denied.' });
+    }
+
+    // Capture Device & Location Details
+    const userAgent = req.headers['user-agent'] || '';
+    const clientIp = req.headers['x-forwarded-for'] || req.ip || req.socket.remoteAddress || '127.0.0.1';
+
+    let browser = 'Web Browser';
+    if (userAgent.includes('Chrome')) browser = 'Google Chrome';
+    else if (userAgent.includes('Firefox')) browser = 'Mozilla Firefox';
+    else if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) browser = 'Apple Safari';
+    else if (userAgent.includes('Edg')) browser = 'Microsoft Edge';
+
+    let os = 'Desktop OS';
+    if (userAgent.includes('Windows')) os = 'Windows OS';
+    else if (userAgent.includes('Macintosh') || userAgent.includes('Mac OS')) os = 'macOS';
+    else if (userAgent.includes('Android')) os = 'Android OS';
+    else if (userAgent.includes('iPhone') || userAgent.includes('iPad')) os = 'iOS';
+    else if (userAgent.includes('Linux')) os = 'Linux OS';
+
+    const deviceDetails = `${browser} (${os})`;
+
+    if (mongoose.connection.readyState === 1) {
+      LoginLog.create({
+        userId: user._id,
+        username: user.username,
+        ipAddress: clientIp,
+        userAgent,
+        deviceDetails,
+        browser,
+        os,
+        city: 'Local Session',
+        country: 'Global',
+        loginTime: new Date(),
+      }).catch((err) => console.warn('[LoginLog Save Warning]:', err.message));
     }
 
     const token = generateToken(user._id);

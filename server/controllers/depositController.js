@@ -20,7 +20,9 @@ export const submitProof = async (req, res, next) => {
       throw new Error('Please upload a payment proof image screenshot.');
     }
 
-    const proofImagePath = `/uploads/${req.file.filename}`;
+    const protocol = req.protocol || 'http';
+    const host = req.get('host') || 'localhost:5000';
+    const proofImagePath = `${protocol}://${host}/uploads/${req.file.filename}`;
     const amountNum = Number(requestedAmount) || 100;
     const gateway = gatewayType || 'USDT BEP20';
     const address = walletAddress || '0x86A04560103588BFA89B478E09F6d89C0C858eEB';

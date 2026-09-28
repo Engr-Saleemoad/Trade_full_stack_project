@@ -10,11 +10,6 @@ export const ForgotPasswordPage = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleQuickFill = () => {
-    setEmail('john@example.com');
-    setErrorMsg('');
-  };
-
   const validateEmail = (val) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(val);
@@ -86,19 +81,7 @@ export const ForgotPasswordPage = () => {
           </p>
         </div>
 
-        {/* Quick Fill Test Email Helper */}
-        <div className="p-3 rounded-xl bg-purple-950/60 border border-purple-800/40 text-xs flex items-center justify-between">
-          <span className="text-[11px] text-purple-300 font-mono">
-            Test Email: <strong className="text-white">john@example.com</strong>
-          </span>
-          <button
-            type="button"
-            onClick={handleQuickFill}
-            className="px-2.5 py-1 rounded-lg bg-[#FF5A1F] hover:bg-[#e04c15] text-white text-[11px] font-bold transition-all shrink-0 cursor-pointer"
-          >
-            Auto Fill
-          </button>
-        </div>
+
 
         {/* Error Alert */}
         {errorMsg && (

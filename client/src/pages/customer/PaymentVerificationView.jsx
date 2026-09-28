@@ -41,6 +41,13 @@ export const PaymentVerificationView = () => {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      if (file.size > 1024 * 1024) {
+        setErrorMsg('File size must not exceed 1MB');
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        setSelectedFile(null);
+        setImagePreview(null);
+        return;
+      }
       if (!file.type.startsWith('image/')) {
         setErrorMsg('Please select an image file (PNG, JPG, JPEG).');
         return;

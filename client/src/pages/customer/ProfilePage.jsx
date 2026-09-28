@@ -29,6 +29,7 @@ export const ProfilePage = () => {
     createdAt: '',
   });
 
+  const [loginLogs, setLoginLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
 
@@ -43,7 +44,19 @@ export const ProfilePage = () => {
 
   useEffect(() => {
     fetchProfile();
+    fetchLoginLogs();
   }, []);
+
+  const fetchLoginLogs = async () => {
+    try {
+      const res = await API.get('/api/user/login-logs');
+      if (res.data && res.data.data) {
+        setLoginLogs(res.data.data);
+      }
+    } catch (err) {
+      console.warn('[Login Logs Fetch Notice]:', err.message);
+    }
+  };
 
   const fetchProfile = async () => {
     setLoading(true);
@@ -65,7 +78,7 @@ export const ProfilePage = () => {
             country: u.country || 'Afghanistan (+93)',
             phone: u.phone || 'N/A',
             status: u.status || 'Active',
-            referralUrl: `https://globalprofithub.co.uk/register/${u.username || 'investor'}`,
+            referralUrl: `https://trade-full-stack-project.vercel.app/register/${u.username || 'investor'}`,
             createdAt: u.createdAt || new Date().toISOString(),
           });
         } catch (e) {}
@@ -83,7 +96,7 @@ export const ProfilePage = () => {
   };
 
   const handleCopyReferral = () => {
-    const urlToCopy = profile.referralUrl || `https://globalprofithub.co.uk/register/${profile.username}`;
+    const urlToCopy = profile.referralUrl || `https://trade-full-stack-project.vercel.app/register/${profile.username}`;
     navigator.clipboard.writeText(urlToCopy);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
@@ -334,6 +347,35 @@ export const ProfilePage = () => {
                 </button>
               </div>
             </form>
+
+            {/* Recent Login Devices & Session Activity */}
+            <div className="pt-4 border-t border-purple-900/40 space-y-3">
+              <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center space-x-2">
+                <Globe className="w-4 h-4 text-[#FF5A1F]" />
+                <span>Recent Login Devices & IP Activity</span>
+              </h3>
+
+              {loginLogs.length === 0 ? (
+                <p className="text-[11px] text-purple-400 italic">No recent device history recorded.</p>
+              ) : (
+                <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
+                  {loginLogs.slice(0, 5).map((log, idx) => (
+                    <div
+                      key={idx}
+                      className="p-3 rounded-xl bg-[#0B0326] border border-purple-900/40 flex items-center justify-between text-[11px]"
+                    >
+                      <div>
+                        <p className="font-bold text-white">{log.deviceDetails || 'Browser Session'}</p>
+                        <p className="text-[10px] font-mono text-purple-400">IP: {log.ipAddress || '127.0.0.1'}</p>
+                      </div>
+                      <span className="text-[10px] text-purple-300 font-semibold">
+                        {log.loginTime ? new Date(log.loginTime).toLocaleString() : 'Recent'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

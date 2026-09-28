@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import adminAPI from '../api/adminAxios';
+import { getImageUrl } from '../utils/imageUrl';
 import {
   Bell,
   Plus,
@@ -96,6 +97,11 @@ export const AdminNoticeBoard = () => {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      if (file.size > 1024 * 1024) {
+        showToastNotification("File size must not exceed 1MB", "error");
+        e.target.value = null;
+        return;
+      }
       setFormData((prev) => ({ ...prev, image: file }));
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -284,7 +290,7 @@ export const AdminNoticeBoard = () => {
                     <td className="py-4 px-4 shrink-0">
                       {notice.imageUrl ? (
                         <img
-                          src={notice.imageUrl}
+                          src={getImageUrl(notice.imageUrl)}
                           alt={notice.title}
                           className="w-16 h-10 object-cover rounded-lg border border-purple-800/40 shadow-sm"
                           onError={(e) => {

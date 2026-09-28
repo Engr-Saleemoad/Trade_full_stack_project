@@ -55,6 +55,20 @@ const userSchema = new mongoose.Schema(
     totalReferralBonus: { type: Number, default: 0 },
     totalTickets: { type: Number, default: 0 },
     lastReferralBonus: { type: Number, default: 0 },
+    referredBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+    referrerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+    referralLevel: {
+      type: Number,
+      default: 0,
+    },
     isSuspended: { type: Boolean, default: false },
     status: {
       type: String,

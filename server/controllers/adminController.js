@@ -1,4 +1,10 @@
 import User from '../models/User.js';
+import SubAdmin from '../models/SubAdmin.js';
+import Deposit from '../models/Deposit.js';
+import Payout from '../models/Payout.js';
+import Investment from '../models/Investment.js';
+import Plan from '../models/Plan.js';
+import { inMemoryDevSubAdmins } from './subAdminController.js';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -53,9 +59,11 @@ export const seedDefaultAdminUser = async () => {
 /**
  * Helper function to generate Admin JWT token
  */
-const generateAdminToken = (id) => {
+const generateAdminToken = (id, role = 'admin', permissions = null) => {
+  const payload = { id, role };
+  if (permissions) payload.permissions = permissions;
   return jwt.sign(
-    { id, role: 'admin' },
+    payload,
     process.env.JWT_SECRET || 'globalprofithub_supersecret_jwt_key_2026',
     { expiresIn: '30d' }
   );
@@ -82,33 +90,52 @@ export const adminLogin = async (req, res, next) => {
         $or: [{ email: identifier }, { username: identifier }],
       });
 
-      if (!user || user.role !== 'admin') {
-        return res.status(401).json({
-          error: 'Access denied. Invalid administrative credentials.',
-        });
+      if (user && user.role === 'admin') {
+        const isMatch = await user.matchPassword(password);
+        if (isMatch) {
+          const token = generateAdminToken(user._id, 'admin');
+          return res.status(200).json({
+            success: true,
+            message: 'Administrative authentication successful.',
+            token,
+            user: {
+              _id: user._id,
+              firstName: user.firstName,
+              lastName: user.lastName,
+              username: user.username,
+              email: user.email,
+              role: 'admin',
+            },
+          });
+        }
       }
 
-      const isMatch = await user.matchPassword(password);
-      if (!isMatch) {
-        return res.status(401).json({
-          error: 'Access denied. Invalid administrative credentials.',
-        });
+      // Check SubAdmin collection if master admin login failed
+      const subAdmin = await SubAdmin.findOne({
+        $or: [{ email: identifier }, { username: identifier }],
+      });
+
+      if (subAdmin) {
+        const isMatch = await subAdmin.matchPassword(password);
+        if (isMatch) {
+          const token = generateAdminToken(subAdmin._id, 'sub-admin', subAdmin.permissions);
+          return res.status(200).json({
+            success: true,
+            message: 'Sub-Admin authentication successful.',
+            token,
+            user: {
+              _id: subAdmin._id,
+              username: subAdmin.username,
+              email: subAdmin.email,
+              role: 'sub-admin',
+              permissions: subAdmin.permissions,
+            },
+          });
+        }
       }
 
-      const token = generateAdminToken(user._id);
-
-      return res.status(200).json({
-        success: true,
-        message: 'Administrative authentication successful.',
-        token,
-        user: {
-          _id: user._id,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          username: user.username,
-          email: user.email,
-          role: user.role,
-        },
+      return res.status(401).json({
+        error: 'Access denied. Invalid administrative credentials.',
       });
     } else {
       console.warn('[Database Notice] MongoDB is offline. Processing admin login in dev fallback mode.');
@@ -117,33 +144,46 @@ export const adminLogin = async (req, res, next) => {
         (u) => u.email === identifier || u.username === identifier
       );
 
-      if (!devAdmin || devAdmin.role !== 'admin') {
-        return res.status(401).json({
-          error: 'Access denied. Invalid administrative credentials.',
+      if (devAdmin && devAdmin.role === 'admin') {
+        const isMatch = await bcrypt.compare(password, devAdmin.password);
+        if (isMatch) {
+          const token = generateAdminToken(devAdmin._id, 'admin');
+          return res.status(200).json({
+            success: true,
+            message: 'Administrative authentication successful.',
+            token,
+            user: {
+              _id: devAdmin._id,
+              username: devAdmin.username,
+              email: devAdmin.email,
+              role: 'admin',
+            },
+          });
+        }
+      }
+
+      const devSub = inMemoryDevSubAdmins.find(
+        (u) => u.email === identifier || u.username === identifier
+      );
+
+      if (devSub) {
+        const token = generateAdminToken(devSub._id, 'sub-admin', devSub.permissions);
+        return res.status(200).json({
+          success: true,
+          message: 'Sub-Admin authentication successful.',
+          token,
+          user: {
+            _id: devSub._id,
+            username: devSub.username,
+            email: devSub.email,
+            role: 'sub-admin',
+            permissions: devSub.permissions,
+          },
         });
       }
 
-      const isMatch = await bcrypt.compare(password, devAdmin.password);
-      if (!isMatch) {
-        return res.status(401).json({
-          error: 'Access denied. Invalid administrative credentials.',
-        });
-      }
-
-      const token = generateAdminToken(devAdmin._id);
-
-      return res.status(200).json({
-        success: true,
-        message: 'Administrative authentication successful.',
-        token,
-        user: {
-          _id: devAdmin._id,
-          firstName: devAdmin.firstName,
-          lastName: devAdmin.lastName,
-          username: devAdmin.username,
-          email: devAdmin.email,
-          role: devAdmin.role,
-        },
+      return res.status(401).json({
+        error: 'Access denied. Invalid administrative credentials.',
       });
     }
   } catch (error) {
@@ -162,27 +202,31 @@ export const getAdminDashboardMetrics = async (req, res, next) => {
 
     let totalUsers = 0;
     let activeUsers = 0;
+    let suspendedUsers = 0;
     let todayJoinUser = 0;
     let totalUserFund = 0;
     let totalInterestFund = 0;
-    let totalPlans = 10;
+    let totalPlans = 0;
     let totalInvestment = 0;
     let runningInvestment = 0;
     let totalDepositAmount = 0;
+    let todayDepositAmount = 0;
+    let totalPayoutAmount = 0;
+    let todayPayoutAmount = 0;
     let pendingPayoutRequest = 0;
     let latestUsers = [];
 
     if (isMongoConnected) {
-      // Import models dynamically if not top-level
-      const Deposit = (await import('../models/Deposit.js')).default;
-      const Payout = (await import('../models/Payout.js')).default;
-      const Investment = (await import('../models/Investment.js')).default;
-
       totalUsers = await User.countDocuments({ role: { $ne: 'admin' } });
       activeUsers = await User.countDocuments({ status: 'Active', role: { $ne: 'admin' } });
+      suspendedUsers = await User.countDocuments({
+        role: { $ne: 'admin' },
+        $or: [{ status: 'Suspended' }, { status: 'Blocked' }, { isSuspended: true }],
+      });
 
       const startOfDay = new Date();
       startOfDay.setHours(0, 0, 0, 0);
+
       todayJoinUser = await User.countDocuments({
         role: { $ne: 'admin' },
         createdAt: { $gte: startOfDay },
@@ -198,14 +242,37 @@ export const getAdminDashboardMetrics = async (req, res, next) => {
         totalInterestFund = userFundAgg[0].totalInterest || 0;
       }
 
+      totalPlans = await Plan.countDocuments({});
       totalInvestment = await Investment.countDocuments({});
-      runningInvestment = await Investment.countDocuments({ activeStatus: true });
+      runningInvestment = await Investment.countDocuments({
+        $or: [{ activeStatus: true }, { status: 'Active' }],
+      });
 
+      // Deposits aggregation
       const depAgg = await Deposit.aggregate([
         { $match: { status: 'Approved' } },
         { $group: { _id: null, total: { $sum: '$requestedAmount' } } },
       ]);
       totalDepositAmount = depAgg[0]?.total || 0;
+
+      const todayDepAgg = await Deposit.aggregate([
+        { $match: { status: 'Approved', updatedAt: { $gte: startOfDay } } },
+        { $group: { _id: null, total: { $sum: '$requestedAmount' } } },
+      ]);
+      todayDepositAmount = todayDepAgg[0]?.total || 0;
+
+      // Payouts aggregation
+      const payoutAgg = await Payout.aggregate([
+        { $match: { status: 'Approved' } },
+        { $group: { _id: null, total: { $sum: '$amount' } } },
+      ]);
+      totalPayoutAmount = payoutAgg[0]?.total || 0;
+
+      const todayPayoutAgg = await Payout.aggregate([
+        { $match: { status: 'Approved', updatedAt: { $gte: startOfDay } } },
+        { $group: { _id: null, total: { $sum: '$amount' } } },
+      ]);
+      todayPayoutAmount = todayPayoutAgg[0]?.total || 0;
 
       pendingPayoutRequest = await Payout.countDocuments({ status: 'Pending' });
 
@@ -231,6 +298,7 @@ export const getAdminDashboardMetrics = async (req, res, next) => {
       totalUsers,
       totalActiveUsers: activeUsers,
       activeUsers,
+      suspendedUsers,
       todayJoinUser,
       totalUserFund,
       totalInterestFund,
@@ -243,31 +311,24 @@ export const getAdminDashboardMetrics = async (req, res, next) => {
       todayInvestAmount: 0,
       thisMonthInvestAmount: 0,
       totalInvestAmount: 0,
-      todayDepositAmount: 0,
+      todayDepositAmount,
       totalDepositAmount,
       totalDeposit: totalDepositAmount,
       depositedCharge: 0,
       pendingPayoutRequest,
-      todayPayoutAmount: 0,
-      thisMonthPayoutAmount: 0,
+      todayPayoutAmount,
+      totalPayoutAmount,
+      thisMonthPayoutAmount: totalPayoutAmount,
       thisMonthPayoutCharge: 0,
       closedTickets: 0,
       repliedTickets: 0,
       answeredTickets: 0,
       pendingTickets: 0,
       monthSummaryChart: [
-        { day: '01 Jul', investments: 200, deposits: 300, returnProfit: 50, payout: 0 },
-        { day: '05 Jul', investments: 450, deposits: 800, returnProfit: 120, payout: 100 },
-        { day: '10 Jul', investments: 800, deposits: 1200, returnProfit: 250, payout: 200 },
-        { day: '15 Jul', investments: 1100, deposits: 2400, returnProfit: 410, payout: 350 },
-        { day: '20 Jul', investments: 1200, deposits: totalDepositAmount || 3780, returnProfit: 600, payout: 500 },
+        { day: 'Start', investments: 0, deposits: totalDepositAmount, returnProfit: totalInterestFund, payout: totalPayoutAmount },
       ],
       planSalePieChart: [
-        { name: 'Shiba Inu (SHIB)', value: 35, color: '#FF5A1F' },
-        { name: 'Cardano (ADA)', value: 25, color: '#3B82F6' },
-        { name: 'Polygon (MATIC)', value: 20, color: '#8B5CF6' },
-        { name: 'Avalanche (AVAX)', value: 12, color: '#EF4444' },
-        { name: 'Dogecoin (DOGE)', value: 8, color: '#F59E0B' },
+        { name: 'Active Plans', value: runningInvestment || 1, color: '#FF5A1F' },
       ],
       latestUsers,
     };

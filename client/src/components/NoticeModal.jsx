@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { fetchActiveNoticeApi } from '../services/api';
 import { Megaphone, X, Check, ShieldAlert, Zap, AlertTriangle, Info } from 'lucide-react';
+import { getImageUrl } from '../utils/imageUrl';
 
 export const NoticeModal = () => {
   const [notice, setNotice] = useState(null);
@@ -82,11 +83,7 @@ export const NoticeModal = () => {
         {notice.imageUrl ? (
           <div className="w-full max-h-52 rounded-2xl overflow-hidden border border-purple-900/40 bg-black shadow-inner">
             <img
-              src={
-                notice.imageUrl.startsWith('http')
-                  ? notice.imageUrl
-                  : `http://localhost:5000${notice.imageUrl}`
-              }
+              src={getImageUrl(notice.imageUrl)}
               alt={notice.title}
               className="w-full h-full object-cover"
               onError={(e) => {

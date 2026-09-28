@@ -1,5 +1,7 @@
 import User from '../models/User.js';
 import Transaction from '../models/Transaction.js';
+import MoneyTransfer from '../models/MoneyTransfer.js';
+import LoginLog from '../models/LoginLog.js';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import { emitRealtimeEvent } from '../socket.js';
@@ -38,7 +40,7 @@ export const getDashboardStats = async (req, res, next) => {
             totalReferralBonus: user.totalReferralBonus || 0,
             totalTickets: user.totalTickets || 0,
             lastReferralBonus: user.lastReferralBonus || 0,
-            referralUrl: `https://globalprofithub.co.uk/register/${user.username}`,
+          referralUrl: `https://trade-full-stack-project.vercel.app/register/${user.username}`,
             investCompletedPercent: 0,
             roiSpeedPercent: 100,
             roiRedeemedPercent: 0,
@@ -102,7 +104,7 @@ export const getUserProfile = async (req, res, next) => {
           country: user.country || 'Afghanistan (+93)',
           phone: user.phone || 'N/A',
           status: user.status || (user.isSuspended ? 'Suspended' : 'Active'),
-          referralUrl: `https://globalprofithub.co.uk/register/${user.username}`,
+          referralUrl: `https://trade-full-stack-project.vercel.app/register/${user.username}`,
           createdAt: user.createdAt,
         };
         return res.status(200).json({
@@ -270,6 +272,190 @@ export const transferBalance = async (req, res, next) => {
     }
 
     return res.status(400).json({ error: 'Database connection offline. Transfer failed.' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Lookup recipient user by username, email, or phone
+ * @route   GET /api/user/lookup?query=<term>
+ * @access  Private (JWT Protected)
+ */
+export const lookupUser = async (req, res, next) => {
+  try {
+    const queryTerm = (req.query.query || '').trim();
+    if (!queryTerm) {
+      return res.status(400).json({ error: 'Please enter a username, email, or phone number to lookup.' });
+    }
+
+    const isMongoConnected = mongoose.connection.readyState === 1;
+
+    if (isMongoConnected) {
+      const user = await User.findOne({
+        $or: [
+          { username: { $regex: `^${queryTerm}$`, $options: 'i' } },
+          { email: { $regex: `^${queryTerm}$`, $options: 'i' } },
+          { phone: { $regex: `^${queryTerm}$`, $options: 'i' } },
+        ],
+      }).select('_id firstName lastName username email phone country status');
+
+      if (!user) {
+        return res.status(404).json({ error: 'Recipient user account not found.' });
+      }
+
+      const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username;
+
+      return res.status(200).json({
+        success: true,
+        user: {
+          _id: user._id,
+          fullName,
+          username: user.username,
+          email: user.email,
+          phone: user.phone || 'N/A',
+          country: user.country || 'N/A',
+          isVerified: true,
+        },
+      });
+    }
+
+    return res.status(400).json({ error: 'Database offline. User lookup unavailable.' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Submit P2P Money Transfer Request for Admin Approval
+ * @route   POST /api/user/transfer-request
+ * @access  Private (JWT Protected)
+ */
+export const requestMoneyTransfer = async (req, res, next) => {
+  try {
+    const senderId = req.user ? (req.user.id || req.user._id) : null;
+    const { recipientUsername, recipientEmail, recipientId, amount } = req.body;
+
+    if (!senderId) {
+      return res.status(401).json({ error: 'Unauthorized user session.' });
+    }
+
+    const transferAmount = Number(amount);
+    if (isNaN(transferAmount) || transferAmount <= 0) {
+      return res.status(400).json({ error: 'Please enter a valid transfer amount greater than 0.' });
+    }
+
+    const targetQuery = (recipientUsername || recipientEmail || '').trim();
+
+    const isMongoConnected = mongoose.connection.readyState === 1;
+
+    if (isMongoConnected) {
+      const sender = await User.findById(senderId);
+      if (!sender) {
+        return res.status(404).json({ error: 'Sender user record not found.' });
+      }
+
+      if ((sender.mainBalance || 0) < transferAmount) {
+        return res.status(400).json({
+          error: `Insufficient balance. Available main balance is $${(sender.mainBalance || 0).toFixed(2)} USD.`,
+        });
+      }
+
+      let recipient = null;
+      if (recipientId && mongoose.Types.ObjectId.isValid(recipientId)) {
+        recipient = await User.findById(recipientId);
+      } else if (targetQuery) {
+        recipient = await User.findOne({
+          $or: [
+            { username: { $regex: `^${targetQuery}$`, $options: 'i' } },
+            { email: { $regex: `^${targetQuery}$`, $options: 'i' } },
+          ],
+        });
+      }
+
+      if (!recipient) {
+        return res.status(404).json({ error: 'Recipient user account not found.' });
+      }
+
+      if (sender._id.toString() === recipient._id.toString()) {
+        return res.status(400).json({ error: 'Self-transfer is not permitted.' });
+      }
+
+      // Create Pending MoneyTransfer Record
+      const moneyTransfer = await MoneyTransfer.create({
+        senderId: sender._id,
+        recipientId: recipient._id,
+        amount: transferAmount,
+        status: 'Pending',
+      });
+
+      // Emit Realtime socket notice for Admin
+      emitRealtimeEvent('transfer_created', moneyTransfer);
+
+      return res.status(200).json({
+        success: true,
+        message: 'Transfer request submitted to admin for approval.',
+        transfer: moneyTransfer,
+      });
+    }
+
+    return res.status(400).json({ error: 'Database connection offline. Request failed.' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Get user login session logs
+ * @route   GET /api/user/login-logs
+ * @access  Private (User Auth)
+ */
+export const getLoginLogs = async (req, res, next) => {
+  try {
+    const userId = req.user ? (req.user.id || req.user._id) : null;
+    const isMongoConnected = mongoose.connection.readyState === 1;
+
+    if (isMongoConnected && userId) {
+      const logs = await LoginLog.find({ userId }).sort({ loginTime: -1 }).limit(30);
+      return res.status(200).json({ success: true, count: logs.length, data: logs });
+    }
+
+    return res.status(200).json({ success: true, count: 0, data: [] });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Get all login logs for Admin
+ * @route   GET /api/admin/login-logs
+ * @access  Private (Admin Auth)
+ */
+export const getAllLoginLogsAdmin = async (req, res, next) => {
+  try {
+    const isMongoConnected = mongoose.connection.readyState === 1;
+
+    if (isMongoConnected) {
+      const rawLogs = await LoginLog.find().sort({ loginTime: -1 }).limit(100);
+      const populated = await Promise.all(
+        rawLogs.map(async (log) => {
+          const item = log.toObject();
+          if (!item.username && item.userId && mongoose.Types.ObjectId.isValid(item.userId)) {
+            const u = await User.findById(item.userId).select('username email');
+            if (u) {
+              item.username = u.username;
+              item.email = u.email;
+            }
+          }
+          item.username = item.username || 'Investor';
+          item.location = item.city && item.country ? `${item.city}, ${item.country}` : (item.country || 'Global');
+          return item;
+        })
+      );
+      return res.status(200).json({ success: true, count: populated.length, data: populated });
+    }
+
+    return res.status(200).json({ success: true, count: 0, data: [] });
   } catch (error) {
     next(error);
   }

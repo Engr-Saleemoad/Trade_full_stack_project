@@ -42,12 +42,18 @@ import {
   Copy,
   CheckCircle2,
   Ticket,
+  LogOut,
 } from 'lucide-react';
 
 export const CustomerDashboard = () => {
   const navigate = useNavigate();
-  const { user, refreshUserData } = useAuth();
+  const { user, refreshUserData, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('Dashboard');
+
+  const handleCustomerLogout = () => {
+    logout();
+    navigate('/login');
+  };
   const [selectedPlanForDeposit, setSelectedPlanForDeposit] = useState(null);
 
   const [stats, setStats] = useState({
@@ -61,7 +67,7 @@ export const CustomerDashboard = () => {
     totalReferralBonus: 0,
     totalTickets: 0,
     lastReferralBonus: 0,
-    referralUrl: 'https://globalprofithub.co.uk/register/investor',
+    referralUrl: 'https://trade-full-stack-project.vercel.app/register/investor',
     investCompletedPercent: 0,
     roiSpeedPercent: 100,
     roiRedeemedPercent: 0,
@@ -109,13 +115,14 @@ export const CustomerDashboard = () => {
         event === 'user_updated'
       ) {
         loadStats();
+        if (refreshUserData) refreshUserData();
       }
     });
 
     return () => {
       if (unsubscribe) unsubscribe();
     };
-  }, []);
+  }, [refreshUserData]);
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(stats.referralUrl);
@@ -280,18 +287,8 @@ export const CustomerDashboard = () => {
             </h1>
           </div>
 
-          {/* Extreme Right Bell & Avatar */}
-          <div className="flex items-center space-x-3 sm:space-x-5">
-            {/* Bell Icon */}
-            <button className="relative p-2 rounded-xl bg-[#140838] border border-purple-900/40 text-slate-300 hover:text-white transition-all">
-              <Bell className="w-4 h-4 sm:w-5 sm:h-5 text-purple-300" />
-              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#FF5A1F] text-[#0B0326] font-extrabold text-[10px] flex items-center justify-center border-2 border-[#0B0326]">
-                1
-              </span>
-            </button>
-
-            <div className="h-5 w-px bg-purple-900/40" />
-
+          {/* Extreme Right Avatar & Sign Out */}
+          <div className="flex items-center space-x-3 sm:space-x-4">
             {/* Circular Profile Avatar */}
             <button
               onClick={() => navigate('/profile')}
@@ -302,8 +299,8 @@ export const CustomerDashboard = () => {
                 {stats.username.charAt(0).toUpperCase()}
               </div>
               <div className="hidden sm:block text-left text-xs">
-                <p className="font-bold text-white capitalize group-hover:text-[#FF5A1F] transition-colors">{stats.username}</p>
-                <p className="text-[10px] text-emerald-400">Investor</p>
+                <p className="font-bold text-white capitalize group-hover:text-[#FF5A1F] transition-colors">{user?.username || stats.username}</p>
+                <p className="text-[10px] text-emerald-400">{user?.email || stats.email || 'user@example.com'}</p>
               </div>
             </button>
           </div>

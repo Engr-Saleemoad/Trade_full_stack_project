@@ -5,6 +5,7 @@ import User from '../models/User.js';
 import Transaction from '../models/Transaction.js';
 import { adminProtect } from '../middleware/authMiddleware.js';
 import { emitRealtimeEvent } from '../socket.js';
+import { distributeReferralCommissions } from '../utils/referralBonus.js';
 
 const router = express.Router();
 
@@ -206,6 +207,15 @@ export const approveDeposit = async (req, res, next) => {
         remarkDescription: 'Payment Amount Has Been Approved by Admin',
         type: 'credit',
       });
+
+      // Trigger multi-level referral commission distribution on deposit approval
+      if (updatedUser) {
+        try {
+          await distributeReferralCommissions(updatedUser._id, amountToCredit, `On User Deposit ($${amountToCredit.toFixed(2)})`);
+        } catch (refErr) {
+          console.warn('[Referral Hook Notice on Deposit Approval]:', refErr.message);
+        }
+      }
 
       // Emit real-time events to all clients & target customer
       emitRealtimeEvent('deposit_updated', deposit);

@@ -18,8 +18,8 @@ export const AdminProtectedRoute = () => {
       adminUser = null;
     }
 
-    // Strict validation: Require adminToken and role === 'admin'
-    if (adminToken && adminUser && adminUser.role === 'admin') {
+    // Validation: Require adminToken and valid role ('admin' or 'sub-admin')
+    if (adminToken && adminUser && (adminUser.role === 'admin' || adminUser.role === 'sub-admin')) {
       setIsAuthorized(true);
     } else if (adminToken && !adminUser) {
       // Fallback: If token exists but user object is not parsed yet, trust token if non-empty

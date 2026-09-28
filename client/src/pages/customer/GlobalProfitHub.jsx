@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import API from '../../api/axios';
+import { useAuth } from '../../context/AuthContext';
 import {
   Shield,
   Zap,
@@ -22,10 +23,13 @@ import {
   MapPin,
   X,
   Menu,
-  RefreshCw
+  RefreshCw,
+  User
 } from 'lucide-react';
 
 export const GlobalProfitHub = () => {
+  const { user } = useAuth();
+  const isLoggedIn = Boolean(user || localStorage.getItem('token'));
   const [videoOpen, setVideoOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [plans, setPlans] = useState([]);
@@ -112,14 +116,24 @@ export const GlobalProfitHub = () => {
             <Link to="/login" className="text-slate-300 hover:text-[#FF5A1F] transition-colors">Plan</Link>
           </nav>
 
-          {/* Right Actions (Login Button & Mobile Hamburger Toggle) */}
+          {/* Right Actions (Login / Go to Dashboard Button & Mobile Hamburger Toggle) */}
           <div className="flex items-center space-x-3">
-            <Link
-              to="/login"
-              className="px-5 sm:px-6 py-2.5 rounded-xl bg-[#FF5A1F] hover:bg-[#e04c15] text-white font-bold text-xs sm:text-sm tracking-wide shadow-lg shadow-[#FF5A1F]/30 transition-all active:scale-95 inline-block"
-            >
-              Login
-            </Link>
+            {isLoggedIn ? (
+              <Link
+                to="/dashboard"
+                className="px-5 sm:px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#FF5A1F] to-amber-600 hover:opacity-90 text-white font-bold text-xs sm:text-sm tracking-wide shadow-lg shadow-[#FF5A1F]/30 transition-all active:scale-95 flex items-center space-x-2"
+              >
+                <User className="w-4 h-4" />
+                <span>Go to Dashboard</span>
+              </Link>
+            ) : (
+              <Link
+                to="/login"
+                className="px-5 sm:px-6 py-2.5 rounded-xl bg-[#FF5A1F] hover:bg-[#e04c15] text-white font-bold text-xs sm:text-sm tracking-wide shadow-lg shadow-[#FF5A1F]/30 transition-all active:scale-95 inline-block"
+              >
+                Login
+              </Link>
+            )}
 
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}

@@ -27,6 +27,7 @@ import { AdminManualGateway } from '../pages/admin/AdminManualGateway';
 import { AdminReferral } from '../pages/admin/AdminReferral';
 import { AdminNotices } from '../pages/admin/AdminNotices';
 import { AdminSettings } from '../pages/admin/AdminSettings';
+import { AdminTransferRequests } from '../pages/admin/AdminTransferRequests';
 import { AdminLoginPage } from '../pages/admin/AdminLoginPage';
 import { ProtectedAdminRoute } from './ProtectedAdminRoute';
 import { TransferView } from '../pages/customer/TransferView';
@@ -34,6 +35,9 @@ import { TransferView } from '../pages/customer/TransferView';
 import { ProfilePage } from '../pages/customer/ProfilePage';
 
 import { AdminTransactions } from '../pages/admin/AdminTransactions';
+import { AdminInvestments } from '../pages/admin/AdminInvestments';
+import { AdminSubAdmins } from '../pages/admin/AdminSubAdmins';
+import { AdminDeviceLogs } from '../pages/admin/AdminDeviceLogs';
 
 export const AppRoutes = () => {
   return (
@@ -107,10 +111,16 @@ export const AppRoutes = () => {
           <Route path="referral" element={<AdminReferral />} />
           <Route path="referrals" element={<AdminReferral />} />
           <Route path="commissions" element={<AdminReferral />} />
-          <Route path="roles" element={<AdminUsers />} />
+          <Route path="sub-admins" element={<AdminSubAdmins />} />
+          <Route path="sub-admin" element={<AdminSubAdmins />} />
+          <Route path="roles" element={<AdminSubAdmins />} />
+          <Route path="device-logs" element={<AdminDeviceLogs />} />
+          <Route path="user-device-details" element={<AdminDeviceLogs />} />
           <Route path="settings" element={<AdminSettings />} />
+          <Route path="transfer-requests" element={<AdminTransferRequests />} />
+          <Route path="transfers" element={<AdminTransferRequests />} />
           <Route path="transactions" element={<AdminTransactions />} />
-          <Route path="investments" element={<AdminPlans />} />
+          <Route path="investments" element={<AdminInvestments />} />
         </Route>
       </Route>
 

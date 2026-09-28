@@ -5,6 +5,7 @@ import CommissionLog from '../models/CommissionLog.js';
 import User from '../models/User.js';
 import Transaction from '../models/Transaction.js';
 import { adminProtect } from '../middleware/authMiddleware.js';
+import { distributeReferralCommissions } from '../utils/referralBonus.js';
 
 const router = express.Router();
 
@@ -162,75 +163,7 @@ export const updateAdminReferralSettings = async (req, res, next) => {
  * @param   {string} triggerEventName - e.g. "Plan Purchase ($50.00)"
  */
 export const distributeReferralCommission = async (referredUserId, amount, triggerEventName) => {
-  try {
-    const isMongoConnected = mongoose.connection.readyState === 1;
-    if (!isMongoConnected) return;
-
-    const referredUser = await User.findById(referredUserId);
-    if (!referredUser) return;
-
-    const settings = await ReferralSetting.findOne();
-    if (!settings || !settings.isActive) return;
-
-    const levels = settings.levels || [];
-    let currentReferrerId = referredUser.referrerId || null;
-    let currentReferredUser = referredUser;
-
-    for (let i = 0; i < levels.length; i++) {
-      if (!currentReferrerId) break;
-
-      const tierObj = levels[i];
-      const levelNum = tierObj.levelNumber;
-      const pct = tierObj.percentage;
-
-      if (pct <= 0) continue;
-
-      const referrerUser = await User.findById(currentReferrerId);
-      if (!referrerUser) break;
-
-      // Calculate commission amount
-      const commAmount = (amount * pct) / 100;
-
-      if (commAmount > 0) {
-        // Atomically update referrer's interest balance & total referral bonus
-        await User.findByIdAndUpdate(referrerUser._id, {
-          $inc: {
-            interestBalance: commAmount,
-            totalReferralBonus: commAmount,
-          },
-        });
-
-        // Record immutable commission log entry
-        await CommissionLog.create({
-          referrerId: referrerUser._id,
-          referrerUsername: referrerUser.username,
-          referredUserId: currentReferredUser._id,
-          referredUsername: currentReferredUser.username,
-          tierLevel: levelNum,
-          commissionAmount: commAmount,
-          sourceTransactionAmount: amount,
-          triggerEvent: `${triggerEventName} (Level ${levelNum} - ${pct}%)`,
-        });
-
-        // Record transaction entry for referrer
-        const txId = 'REF' + Date.now().toString(36).toUpperCase();
-        await Transaction.create({
-          userId: referrerUser._id,
-          uniqueTxId: txId,
-          amount: commAmount,
-          amountString: `+$${commAmount.toFixed(2)} USD`,
-          remarkDescription: `Level ${levelNum} Referral Commission from @${currentReferredUser.username}`,
-          type: 'credit',
-        });
-      }
-
-      // Move up tree hierarchy for multi-level referral payouts
-      currentReferredUser = referrerUser;
-      currentReferrerId = referrerUser.referrerId || null;
-    }
-  } catch (err) {
-    console.error('[Referral Commission Automation Error]:', err.message);
-  }
+  return await distributeReferralCommissions(referredUserId, amount, triggerEventName);
 };
 
 // Router Registrations

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { registerUserApi } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-import { Shield, ChevronRight, AlertCircle, CheckCircle2, User, Mail, Lock, Phone, Globe } from 'lucide-react';
+import { Shield, ChevronRight, AlertCircle, CheckCircle2, User, Mail, Lock, Phone, Eye, EyeOff } from 'lucide-react';
 
 export const RegisterPage = () => {
   const navigate = useNavigate();
@@ -13,28 +13,19 @@ export const RegisterPage = () => {
     lastName: '',
     username: '',
     email: '',
-    country: 'Afghanistan (+93)',
     phone: '',
     password: '',
     confirmPassword: '',
     agreeTerms: false,
   });
 
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [submitting, setSubmitting] = useState(false);
-
-  const countries = [
-    'Afghanistan (+93)',
-    'United States (+1)',
-    'United Kingdom (+44)',
-    'India (+91)',
-    'Canada (+1)',
-    'Australia (+61)',
-    'Germany (+49)',
-    'United Arab Emirates (+971)',
-  ];
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -99,7 +90,6 @@ export const RegisterPage = () => {
         lastName: formData.lastName,
         username: formData.username,
         email: formData.email,
-        country: formData.country,
         phone: formData.phone,
         password: formData.password,
       };
@@ -118,7 +108,6 @@ export const RegisterPage = () => {
         lastName: '',
         username: '',
         email: '',
-        country: 'Afghanistan (+93)',
         phone: '',
         password: '',
         confirmPassword: '',
@@ -131,8 +120,18 @@ export const RegisterPage = () => {
       }, 1500);
     } catch (err) {
       const message =
-        err.response?.data?.message || err.message || 'Registration failed. Please try again.';
+        err.response?.data?.error || err.response?.data?.message || err.message || 'Registration failed. Please try again.';
       setServerError(message);
+
+      // Map backend error directly to individual input field error if duplicate
+      const lowerMsg = message.toLowerCase();
+      if (lowerMsg.includes('username')) {
+        setErrors((prev) => ({ ...prev, username: message }));
+      } else if (lowerMsg.includes('email')) {
+        setErrors((prev) => ({ ...prev, email: message }));
+      } else if (lowerMsg.includes('phone')) {
+        setErrors((prev) => ({ ...prev, phone: message }));
+      }
     } finally {
       setSubmitting(false);
     }
@@ -156,7 +155,6 @@ export const RegisterPage = () => {
 
       {/* ------------------- FORM CONTAINER ------------------- */}
       <main className="flex-1 max-w-3xl w-full mx-auto px-4 py-12">
-        {/* Dark-purple rectangular card with distinct sharp orange top-left dynamic border accent */}
         <div className="bg-[#130833] border border-purple-900/40 border-t-4 border-l-4 border-t-[#FF5A1F] border-l-[#FF5A1F] rounded-2xl p-6 sm:p-10 shadow-2xl relative">
           
           <div className="mb-8 border-b border-purple-900/40 pb-4">
@@ -233,7 +231,7 @@ export const RegisterPage = () => {
                     errors.username ? 'border-rose-500' : 'border-purple-900/50'
                   } rounded-xl text-xs text-white placeholder:text-purple-300/30 focus:outline-none focus:border-[#FF5A1F] transition-colors`}
                 />
-                {errors.username && <p className="text-[11px] text-rose-400 mt-1">{errors.username}</p>}
+                {errors.username && <p className="text-[11px] text-rose-400 mt-1 font-semibold">{errors.username}</p>}
               </div>
 
               <div>
@@ -250,69 +248,56 @@ export const RegisterPage = () => {
                     errors.email ? 'border-rose-500' : 'border-purple-900/50'
                   } rounded-xl text-xs text-white placeholder:text-purple-300/30 focus:outline-none focus:border-[#FF5A1F] transition-colors`}
                 />
-                {errors.email && <p className="text-[11px] text-rose-400 mt-1">{errors.email}</p>}
+                {errors.email && <p className="text-[11px] text-rose-400 mt-1 font-semibold">{errors.email}</p>}
               </div>
             </div>
 
-            {/* Grid 3: Country Dropdown & Phone Number */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-xs font-semibold text-[#A397C7] mb-2">
-                  Country <span className="text-[#FF5A1F]">*</span>
-                </label>
-                <select
-                  name="country"
-                  value={formData.country}
+            {/* Streamlined Single Phone Input with Country Code */}
+            <div>
+              <label className="block text-xs font-semibold text-[#A397C7] mb-2">
+                Mobile / Phone Number (Include Country Code) <span className="text-[#FF5A1F]">*</span>
+              </label>
+              <div className="relative">
+                <Phone className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-purple-400" />
+                <input
+                  type="text"
+                  name="phone"
+                  value={formData.phone}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 bg-[#0B0326]/90 border border-purple-900/50 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF5A1F] transition-colors cursor-pointer"
-                >
-                  {countries.map((c, idx) => (
-                    <option key={idx} value={c} className="bg-[#0B0326] text-white">
-                      {c}
-                    </option>
-                  ))}
-                </select>
+                  placeholder="+923001234567 or +1234567890"
+                  className={`w-full pl-10 pr-4 py-3 bg-[#0B0326]/90 border ${
+                    errors.phone ? 'border-rose-500' : 'border-purple-900/50'
+                  } rounded-xl text-xs text-white placeholder:text-purple-300/30 focus:outline-none focus:border-[#FF5A1F] transition-colors`}
+                />
               </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-[#A397C7] mb-2">
-                  Mobile Number <span className="text-[#FF5A1F]">*</span>
-                </label>
-                <div className="flex">
-                  <div className="px-3 py-3 bg-purple-950/60 border border-r-0 border-purple-900/50 rounded-l-xl text-xs text-[#FF5A1F] font-bold shrink-0 flex items-center">
-                    +93
-                  </div>
-                  <input
-                    type="text"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    placeholder="Your Phone Number"
-                    className={`w-full px-4 py-3 bg-[#0B0326]/90 border ${
-                      errors.phone ? 'border-rose-500' : 'border-purple-900/50'
-                    } rounded-r-xl text-xs text-white placeholder:text-purple-300/30 focus:outline-none focus:border-[#FF5A1F] transition-colors`}
-                  />
-                </div>
-                {errors.phone && <p className="text-[11px] text-rose-400 mt-1">{errors.phone}</p>}
-              </div>
+              {errors.phone && <p className="text-[11px] text-rose-400 mt-1 font-semibold">{errors.phone}</p>}
             </div>
 
-            {/* Grid 4: Password & Confirm Password */}
+            {/* Grid 3: Password & Confirm Password with Eye Toggles */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
                 <label className="block text-xs font-semibold text-[#A397C7] mb-2">
                   Password <span className="text-[#FF5A1F]">*</span>
                 </label>
-                <input
-                  type="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  placeholder="Password"
-                  className={`w-full px-4 py-3 bg-[#0B0326]/90 border ${
-                    errors.password ? 'border-rose-500' : 'border-purple-900/50'
-                  } rounded-xl text-xs text-white placeholder:text-purple-300/30 focus:outline-none focus:border-[#FF5A1F] transition-colors`}
-                />
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    placeholder="Password"
+                    className={`w-full pl-4 pr-10 py-3 bg-[#0B0326]/90 border ${
+                      errors.password ? 'border-rose-500' : 'border-purple-900/50'
+                    } rounded-xl text-xs text-white placeholder:text-purple-300/30 focus:outline-none focus:border-[#FF5A1F] transition-colors`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-purple-400 hover:text-white transition-colors cursor-pointer"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
                 {errors.password && <p className="text-[11px] text-rose-400 mt-1">{errors.password}</p>}
               </div>
 
@@ -320,16 +305,25 @@ export const RegisterPage = () => {
                 <label className="block text-xs font-semibold text-[#A397C7] mb-2">
                   Confirm Password <span className="text-[#FF5A1F]">*</span>
                 </label>
-                <input
-                  type="password"
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  placeholder="Confirm Password"
-                  className={`w-full px-4 py-3 bg-[#0B0326]/90 border ${
-                    errors.confirmPassword ? 'border-rose-500' : 'border-purple-900/50'
-                  } rounded-xl text-xs text-white placeholder:text-purple-300/30 focus:outline-none focus:border-[#FF5A1F] transition-colors`}
-                />
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    name="confirmPassword"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    placeholder="Confirm Password"
+                    className={`w-full pl-4 pr-10 py-3 bg-[#0B0326]/90 border ${
+                      errors.confirmPassword ? 'border-rose-500' : 'border-purple-900/50'
+                    } rounded-xl text-xs text-white placeholder:text-purple-300/30 focus:outline-none focus:border-[#FF5A1F] transition-colors`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-purple-400 hover:text-white transition-colors cursor-pointer"
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
                 {errors.confirmPassword && (
                   <p className="text-[11px] text-rose-400 mt-1">{errors.confirmPassword}</p>
                 )}

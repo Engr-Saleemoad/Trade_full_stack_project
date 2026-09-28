@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { listenToRealtimeEvents } from '../../services/socket';
+import { getImageUrl } from '../../utils/imageUrl';
 import {
   Inbox,
   Search,
@@ -338,13 +339,13 @@ export const AdminDepositRequests = () => {
                           <div className="w-10 h-10 rounded-lg overflow-hidden bg-purple-950 flex items-center justify-center">
                             {item.proofImage ? (
                               <img
-                                src={item.proofImage}
+                                src={getImageUrl(item.proofImage)}
                                 alt="Payment Proof"
                                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                                 onError={(e) => {
                                   // Fallback thumbnail placeholder if image URL doesn't load
                                   e.target.style.display = 'none';
-                                  e.target.nextSibling.style.display = 'flex';
+                                  if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex';
                                 }}
                               />
                             ) : null}
@@ -504,12 +505,12 @@ export const AdminDepositRequests = () => {
             <div className="w-full max-h-[380px] rounded-2xl overflow-hidden border border-purple-900/40 bg-black flex items-center justify-center p-2">
               {selectedProof.proofImage ? (
                 <img
-                  src={selectedProof.proofImage}
+                  src={getImageUrl(selectedProof.proofImage)}
                   alt="Proof Full Size"
                   className="max-h-[360px] w-auto object-contain rounded-xl"
                   onError={(e) => {
                     e.target.style.display = 'none';
-                    e.target.nextSibling.style.display = 'flex';
+                    if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex';
                   }}
                 />
               ) : null}
