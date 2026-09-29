@@ -8,7 +8,7 @@ export const getImageUrl = (url) => {
     return url;
   }
   
-  let baseUrl = 'https://globalprofithub-api.onrender.com';
+  let baseUrl = 'https://trade-full-stack-project-backend.onrender.com';
   if (typeof window !== 'undefined') {
     const { protocol, hostname, port } = window.location;
     if (hostname === 'localhost' || hostname === '127.0.0.1' || port === '5173' || port === '3000') {

@@ -3,11 +3,11 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://globalprofithub-api.onrender.com/api/:path*"
+      "destination": "https://trade-full-stack-project-backend.onrender.com/api/:path*"
     },
     {
       "source": "/uploads/:path*",
-      "destination": "https://globalprofithub-api.onrender.com/uploads/:path*"
+      "destination": "https://trade-full-stack-project-backend.onrender.com/uploads/:path*"
     },
     {
       "source": "/(.*)",

@@ -13,7 +13,7 @@ const getBaseApiUrl = () => {
     return envUrl.replace(/\/api\/?$/, '');
   }
 
-  return 'https://globalprofithub-api.onrender.com';
+  return 'https://trade-full-stack-project-backend.onrender.com';
 };
 
 let socket = null;
