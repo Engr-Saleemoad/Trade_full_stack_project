@@ -44,13 +44,15 @@ API.interceptors.response.use(
     if (error.response && error.response.status === 403) {
       const errMsg = error.response.data?.error || error.response.data?.message || '';
       if (
-        errMsg.includes('suspended') ||
+        (errMsg.includes('suspended') ||
         errMsg.includes('blocked') ||
-        errMsg.includes('Access denied')
+        errMsg.includes('Access denied')) &&
+        typeof window !== 'undefined' &&
+        !window.location.pathname.startsWith('/admin')
       ) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+        if (window.location.pathname !== '/login') {
           window.location.href = '/login';
         }
       }

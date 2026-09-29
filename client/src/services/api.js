@@ -1,4 +1,5 @@
 import API from '../api/axios';
+import adminAPI from '../api/adminAxios';
 
 const api = API;
 
@@ -31,7 +32,7 @@ export const loginUserApi = async (credentials) => {
  * Admin login endpoint call
  */
 export const adminLoginApi = async (credentials) => {
-  const response = await api.post('/admin/login', credentials);
+  const response = await adminAPI.post('/admin/login', credentials);
   return response.data;
 };
 
@@ -39,12 +40,7 @@ export const adminLoginApi = async (credentials) => {
  * Fetch administrative dashboard metrics
  */
 export const fetchAdminDashboardMetricsApi = async () => {
-  const adminToken = localStorage.getItem('adminToken');
-  const response = await api.get('/admin/dashboard-metrics', {
-    headers: {
-      Authorization: `Bearer ${adminToken || ''}`,
-    },
-  });
+  const response = await adminAPI.get('/admin/dashboard-metrics');
   return response.data;
 };
 
@@ -169,12 +165,7 @@ export const claimInvestRewardApi = async (investmentId) => {
  * Fetch global admin settings (including timer interval)
  */
 export const fetchAdminSettingsApi = async () => {
-  const adminToken = localStorage.getItem('adminToken');
-  const response = await api.get('/admin/settings', {
-    headers: {
-      Authorization: `Bearer ${adminToken || ''}`,
-    },
-  });
+  const response = await adminAPI.get('/admin/settings');
   return response.data;
 };
 
@@ -182,15 +173,9 @@ export const fetchAdminSettingsApi = async () => {
  * Update global investment claim timer duration
  */
 export const updateAdminTimerSettingApi = async (investmentIntervalMinutes) => {
-  const adminToken = localStorage.getItem('adminToken');
-  const response = await api.put(
+  const response = await adminAPI.put(
     '/admin/settings/timer',
-    { investmentIntervalMinutes },
-    {
-      headers: {
-        Authorization: `Bearer ${adminToken || ''}`,
-      },
-    }
+    { investmentIntervalMinutes }
   );
   return response.data;
 };
@@ -212,15 +197,9 @@ export const fetchMyLedgerApi = async () => {
  * Update user account status (Active, Suspended, Blocked)
  */
 export const updateUserStatusApi = async (userId, newStatus) => {
-  const adminToken = localStorage.getItem('adminToken');
-  const response = await api.patch(
+  const response = await adminAPI.patch(
     `/admin/users/${userId}/status`,
-    { newStatus },
-    {
-      headers: {
-        Authorization: `Bearer ${adminToken || ''}`,
-      },
-    }
+    { newStatus }
   );
   return response.data;
 };
@@ -237,12 +216,7 @@ export const fetchActiveNoticeApi = async () => {
  * Fetch all notices for admin notice manager
  */
 export const fetchAdminNoticesApi = async () => {
-  const adminToken = localStorage.getItem('adminToken');
-  const response = await api.get('/admin/notices', {
-    headers: {
-      Authorization: `Bearer ${adminToken || ''}`,
-    },
-  });
+  const response = await adminAPI.get('/admin/notices');
   return response.data;
 };
 
@@ -250,11 +224,9 @@ export const fetchAdminNoticesApi = async () => {
  * Create a new notice announcement (FormData for image file support)
  */
 export const createNoticeApi = async (formData) => {
-  const adminToken = localStorage.getItem('adminToken');
-  const response = await api.post('/admin/notices', formData, {
+  const response = await adminAPI.post('/admin/notices', formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
-      Authorization: `Bearer ${adminToken || ''}`,
     },
   });
   return response.data;
@@ -264,11 +236,9 @@ export const createNoticeApi = async (formData) => {
  * Update an existing notice
  */
 export const updateNoticeApi = async (id, formData) => {
-  const adminToken = localStorage.getItem('adminToken');
-  const response = await api.put(`/admin/notices/${id}`, formData, {
+  const response = await adminAPI.put(`/admin/notices/${id}`, formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
-      Authorization: `Bearer ${adminToken || ''}`,
     },
   });
   return response.data;
@@ -278,12 +248,7 @@ export const updateNoticeApi = async (id, formData) => {
  * Toggle notice active/inactive state
  */
 export const toggleNoticeStatusApi = async (id) => {
-  const adminToken = localStorage.getItem('adminToken');
-  const response = await api.patch(`/admin/notices/${id}/toggle`, {}, {
-    headers: {
-      Authorization: `Bearer ${adminToken || ''}`,
-    },
-  });
+  const response = await adminAPI.patch(`/admin/notices/${id}/toggle`, {});
   return response.data;
 };
 
@@ -291,12 +256,7 @@ export const toggleNoticeStatusApi = async (id) => {
  * Delete a notice permanently
  */
 export const deleteNoticeApi = async (id) => {
-  const adminToken = localStorage.getItem('adminToken');
-  const response = await api.delete(`/admin/notices/${id}`, {
-    headers: {
-      Authorization: `Bearer ${adminToken || ''}`,
-    },
-  });
+  const response = await adminAPI.delete(`/admin/notices/${id}`);
   return response.data;
 };
 
